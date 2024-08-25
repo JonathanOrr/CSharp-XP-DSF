@@ -26,3 +26,4 @@ C:\Users\Jonathan\Desktop\CSharp_dsf\ConsoleApp1\CSharp-XP-DSF\ConsoleApp1\obj\D
 C:\Users\Jonathan\Desktop\CSharp_dsf\ConsoleApp1\CSharp-XP-DSF\ConsoleApp1\obj\Debug\net8.0\ConsoleApp1.pdb
 C:\Users\Jonathan\Desktop\CSharp_dsf\ConsoleApp1\CSharp-XP-DSF\ConsoleApp1\obj\Debug\net8.0\ConsoleApp1.genruntimeconfig.cache
 C:\Users\Jonathan\Desktop\CSharp_dsf\ConsoleApp1\CSharp-XP-DSF\ConsoleApp1\obj\Debug\net8.0\ref\ConsoleApp1.dll
+C:\Users\Jonathan\Desktop\CSharp_dsf\ConsoleApp1\CSharp-XP-DSF\ConsoleApp1\obj\Debug\net8.0\ConsoleApp1.sourcelink.json

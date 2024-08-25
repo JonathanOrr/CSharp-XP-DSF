@@ -4,10 +4,138 @@ using CSDsf;
 //Console.WriteLine("Hello, World!");
 
 XPLNEDSF dsf = new XPLNEDSF();
-
 dsf.Read("D:/SteamLibrary/steamapps/common/X-Plane 12/Global Scenery/X-Plane 12 Global Scenery/Earth nav data/+70+020/+71+027.dsf");
 
-// foreach (var item in unpacked)
-// {
-//     Console.WriteLine(item);
-// }
+const int AREA_W = 0;
+const int AREA_E = 1;
+const int AREA_S = 0;
+const int AREA_N = 1;
+const int SCALING = 1000;
+
+Console.WriteLine("------------ Starting to transform DSF ------------------");
+
+int gridWest = int.Parse(dsf.Properties["sim/west"]);
+int gridSouth = int.Parse(dsf.Properties["sim/south"]);
+Console.WriteLine($"Importing Mesh and setting west={gridWest} and south={gridSouth} to origin.");
+
+int areaWest = AREA_W;
+int areaEast = AREA_E;
+int areaSouth = AREA_S;
+int areaNorth = AREA_N;
+
+if (0 <= AREA_W && AREA_W <= 1 && 0 <= AREA_S && AREA_S <= 1)
+{
+    areaWest += gridWest;
+    areaEast += gridWest;
+    areaSouth += gridSouth;
+    areaNorth += gridSouth;
+}
+
+Console.WriteLine($"But extracting just from west {areaWest} to east {areaEast} and south {areaSouth} to north {areaNorth}");
+
+// Sorting mesh patches
+var terLayers = new Dictionary<(int?, int?, float?, float?), List<XPLNEpatch>>();
+foreach (var p in dsf.Patches)
+{
+    var terType = (p.Flag, p.DefIndex, p.Near, p.Far);
+    if (!terLayers.ContainsKey(terType))
+        terLayers[terType] = new List<XPLNEpatch>();
+    terLayers[terType].Add(p);
+}
+
+Console.WriteLine($"Sorted {dsf.Patches.Count} mesh patches into {terLayers.Count} different types");
+
+var verts = new List<List<double>>();
+var edges = new List<int>();  // Not filled as Blender takes in case of empty edges the edges from the faces
+var faces = new List<List<int>>();
+var uvs = new List<(double, double)>();
+var coords = new Dictionary<(double, double), int>();
+var trisIsWater = new List<bool>();
+
+foreach (var terLayerId in terLayers.Keys)
+{
+    if (terLayerId.Item1 != 1) // only read base mesh
+        continue;  // skip all overlays
+
+    bool projectedUv = false;
+    bool water = dsf.DefTerrains[(int)terLayerId.Item2] == "terrain_Water";
+
+    foreach (var p in terLayers[terLayerId])
+    {
+        var trias = p.Triangles();
+
+        if (water && trias.Count > 0 && dsf.V[trias[0][0][0]][trias[0][0][1]].Count <= 5)
+        {
+            projectedUv = true;
+        }
+        else
+        {
+            projectedUv = false;
+        }
+
+        foreach (var t in trias)
+        {
+            if (!(areaWest <= dsf.V[t[0][0]][t[0][1]][0] && dsf.V[t[0][0]][t[0][1]][0] <= areaEast &&
+                  areaSouth <= dsf.V[t[0][0]][t[0][1]][1] && dsf.V[t[0][0]][t[0][1]][1] <= areaNorth) &&
+                !(areaWest <= dsf.V[t[1][0]][t[1][1]][0] && dsf.V[t[1][0]][t[1][1]][0] <= areaEast &&
+                  areaSouth <= dsf.V[t[1][0]][t[1][1]][1] && dsf.V[t[1][0]][t[1][1]][1] <= areaNorth) &&
+                !(areaWest <= dsf.V[t[2][0]][t[2][1]][0] && dsf.V[t[2][0]][t[2][1]][0] <= areaEast &&
+                  areaSouth <= dsf.V[t[2][0]][t[2][1]][1] && dsf.V[t[2][0]][t[2][1]][1] <= areaNorth))
+            {
+                continue;
+            }
+
+            var ti = new List<int>();  // index list of vertices of tria that will be added to faces
+            var tuvs = new List<(double, double)>();  // uvs for that triangle
+
+            foreach (var v in t)
+            {
+                double vx = Math.Round((dsf.V[v[0]][v[1]][0] - gridWest) * SCALING, 3);
+                double vy = Math.Round((dsf.V[v[0]][v[1]][1] - gridSouth) * SCALING, 3);
+                double vz = (double)dsf.GetVertexElevation(dsf.V[v[0]][v[1]][0], dsf.V[v[0]][v[1]][1], dsf.V[v[0]][v[1]][2]);
+                vz = Math.Round(vz / (100000.0 / SCALING), 3);
+
+                int vi;
+                if (coords.ContainsKey((vx, vy)))
+                {
+                    vi = coords[(vx, vy)];
+                }
+                else
+                {
+                    vi = coords.Count;
+                    coords[(vx, vy)] = vi;
+                    verts.Add(new List<double> { vx, vy, vz });
+                }
+
+                ti.Insert(0, vi);
+
+                if (dsf.V[v[0]][v[1]].Count == 7)
+                {
+                    if (!projectedUv && p.Flag == 1)
+                    {
+                        tuvs.Insert(0, (dsf.V[v[0]][v[1]][5], dsf.V[v[0]][v[1]][6]));
+                    }
+                    else
+                    {
+                        tuvs.Insert(0, (vx / 100, vy / 100));
+                    }
+                }
+                else if (dsf.V[v[0]][v[1]].Count == 9)
+                {
+                    tuvs.Insert(0, (dsf.V[v[0]][v[1]][5], dsf.V[v[0]][v[1]][6]));
+                }
+                else
+                {
+                    tuvs.Insert(0, (vx / 100, vy / 100));
+                }
+            }
+
+            faces.Add(ti);
+            uvs.AddRange(tuvs);
+            trisIsWater.Add(water);
+        }
+    }
+}
+
+Console.WriteLine($"Loaded mesh with {faces.Count} faces");
+Console.WriteLine("Finished");

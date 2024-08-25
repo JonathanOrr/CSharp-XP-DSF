@@ -33,9 +33,9 @@ public class XPLNEpatch
         var triangles = new List<int[][]>();
         int? poolIndex = null;
 
-        foreach (var command in Cmds)
+        foreach (dynamic command in Cmds)
         {
-            switch (command[0])
+            switch ((int) command[0])
             {
                 case 1: // COORDINATE POOL SELECT
                     poolIndex = (int?)command[1];
