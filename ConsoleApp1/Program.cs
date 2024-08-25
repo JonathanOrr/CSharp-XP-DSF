@@ -4,7 +4,7 @@ using CSDsf;
 //Console.WriteLine("Hello, World!");
 
 XPLNEDSF dsf = new XPLNEDSF();
-dsf.Read("D:/SteamLibrary/steamapps/common/X-Plane 12/Global Scenery/X-Plane 12 Global Scenery/Earth nav data/+70+020/+71+027.dsf");
+dsf.Read("D:/SteamLibrary/steamapps/common/X-Plane 12/Global Scenery/X-Plane 12 Global Scenery/Earth nav data/+40+010/+47+011.dsf");
 
 const int AREA_W = 0;
 const int AREA_E = 1;
@@ -52,7 +52,7 @@ var uvs = new List<(double, double)>();
 var coords = new Dictionary<(double, double), int>();
 var trisIsWater = new List<bool>();
 
-foreach (var terLayerId in terLayers.Keys)
+foreach (var terLayerId in terLayers.Keys.OrderBy(k => k.Item1).ThenBy(k => k.Item2))
 {
     if (terLayerId.Item1 != 1) // only read base mesh
         continue;  // skip all overlays
@@ -137,5 +137,42 @@ foreach (var terLayerId in terLayers.Keys)
     }
 }
 
+using (StreamWriter writer = new StreamWriter("C:/Users/Jonathan/Desktop/test.stl"))
+{
+    writer.WriteLine("solid model");
+
+    foreach (var face in faces)
+    {
+        // Get the vertices for this face
+        var v1 = verts[face[0]];
+        var v2 = verts[face[1]];
+        var v3 = verts[face[2]];
+
+        // Calculate the normal vector (not normalized for simplicity)
+        var nx = (v2[1] - v1[1]) * (v3[2] - v1[2]) - (v2[2] - v1[2]) * (v3[1] - v1[1]);
+        var ny = (v2[2] - v1[2]) * (v3[0] - v1[0]) - (v2[0] - v1[0]) * (v3[2] - v1[2]);
+        var nz = (v2[0] - v1[0]) * (v3[1] - v1[1]) - (v2[1] - v1[1]) * (v3[0] - v1[0]);
+
+        writer.WriteLine($"facet normal {nx} {ny} {nz}");
+        writer.WriteLine("  outer loop");
+        writer.WriteLine($"    vertex {v1[0]} {v1[1]} {v1[2]}");
+        writer.WriteLine($"    vertex {v2[0]} {v2[1]} {v2[2]}");
+        writer.WriteLine($"    vertex {v3[0]} {v3[1]} {v3[2]}");
+        writer.WriteLine("  endloop");
+        writer.WriteLine("endfacet");
+    }
+
+    writer.WriteLine("endsolid model");
+}
+
+using (StreamWriter outputFile = new StreamWriter(Path.Combine("C:/Users/Jonathan/Desktop/", "testcs.txt")))
+{
+    foreach (var f in verts)
+    {
+        outputFile.WriteLine($"{f[0]}, {f[1]}, {f[2]}");
+    }
+}
+
+Console.WriteLine($"Loaded mesh with {verts.Count} vertices");
 Console.WriteLine($"Loaded mesh with {faces.Count} faces");
 Console.WriteLine("Finished");
