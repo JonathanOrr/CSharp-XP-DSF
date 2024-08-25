@@ -742,7 +742,7 @@ public class XPLNEDSF
                 case int cmd when cmd >= 23 && cmd <= 31: // Patch Command
                     if (patchPoolIndex != poolIndex)
                     {
-                        Patches.Last().Cmds.Add([1, poolIndex ]);
+                        Patches.Last().Cmds.Add([1, poolIndex]);
                         patchPoolIndex = poolIndex;
                     }
                     if (Patches.Last().DefIndex != defIndex)
@@ -834,6 +834,59 @@ public class XPLNEDSF
         }
 
         return 0;
+    }
+
+    public double? GetVertexElevation(double x, double y, double z = -32768)
+    {
+        if ((int)z != -32768) // If the z vertex is different from -32768, then this is the correct height and not taken from the raster
+        {
+            return z;
+        }
+
+        if (!Properties.ContainsKey("sim/west"))
+        {
+            Console.WriteLine("Cannot get elevation as properties like sim/west are not defined!!!");
+            return null;
+        }
+
+        if (!(int.Parse(Properties["sim/west"]) <= x && x <= int.Parse(Properties["sim/east"])))
+        {
+            Console.WriteLine("Cannot get elevation as x coordinate is not within boundaries!!!");
+            return null;
+        }
+
+        if (!(int.Parse(Properties["sim/south"]) <= y && y <= int.Parse(Properties["sim/north"])))
+        {
+            Console.WriteLine("Cannot get elevation as y coordinate is not within boundaries!!!");
+            return null;
+        }
+
+        if (DefRasters.Count == 0) // No raster defined, use elevation from trias
+        {
+            Console.WriteLine("GetVertexElevation: dsf includes no raster, elevation returned is None");
+            return null;
+        }
+        else // Use raster to get elevation; this version assumes that elevation raster is the first raster layer (index 0)
+        {
+            if (DefRasters[0] != "elevation")
+            {
+                Console.WriteLine("Warning: The first raster layer is not called elevation, but used to determine elevation!");
+            }
+
+            x = Math.Abs(x - int.Parse(Properties["sim/west"])) * (Raster[0].Width - 1); // -1 from width required because pixels cover the boundaries of dsf lon/lat grid
+            y = Math.Abs(y - int.Parse(Properties["sim/south"])) * (Raster[0].Height - 1); // -1 from height required because pixels cover the boundaries of dsf lon/lat grid
+
+            if ((Raster[0].Flags & 4) != 0) // When bit 4 is set, then the data is stored post-centric, meaning the center of the pixel lies on the dsf-boundaries, rounding should apply
+            {
+                x = Math.Round(x, 0);
+                y = Math.Round(y, 0);
+            }
+
+            int ix = (int)x; // For point-centric, the outer edges of the pixels lie on the boundary of dsf, and just cutting to int should be right
+            int iy = (int)y;
+
+            return Raster[0].Data[ix][iy];
+        }
     }
 
     public int Read(string file)
