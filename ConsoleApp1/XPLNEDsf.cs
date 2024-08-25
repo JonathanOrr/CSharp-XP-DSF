@@ -95,8 +95,8 @@ public class XPLNEDSF
     public List<XPLNEpatch> Patches { get; set; } // Mesh patches, list of objects of class XPLNEpatch
     public List<List<List<double>>> V { get; set; } // 3D list of all vertices V[PoolID][Vertex][xyz etc coordinates]
     public List<List<List<double>>> V32 { get; set; } // Same as V but for 32-bit coordinates
-    public List<List<List<double>>> Scalings { get; set; } // 3D list of all scale multipliers and offsets for all pools and planes
-    public List<List<List<double>>> Scal32 { get; set; } // Same as Scalings but for vertices with 32-bit coordinates
+    public List<List<List<float>>> Scalings { get; set; } // 3D list of all scale multipliers and offsets for all pools and planes
+    public List<List<List<float>>> Scal32 { get; set; } // Same as Scalings but for vertices with 32-bit coordinates
     public List<XPLNEraster> Raster { get; set; } // Raster layers of file
     public List<List<List<object>>> Polygons { get; set; } // For each Polygon Definition a list of PoolId, CommandData values of Polygon
     public List<List<List<object>>> Objects { get; set; } // For each Object Definition a list of PoolId, CommandData values of Object
@@ -378,7 +378,7 @@ public class XPLNEDSF
     {
         Console.WriteLine($"Start to unpack and extract all scalings of {bit} bit pools.");
 
-        List<List<List<double>>> scalingsRef;
+        List<List<List<float>>> scalingsRef;
         List<byte[]> atomString;
 
         if (bit == 32) // 32 bit scaling pool
@@ -418,7 +418,7 @@ public class XPLNEDSF
         }
 
         List<List<List<double>>> Vref;
-        List<List<List<double>>> scalingsRef;
+        List<List<List<float>>> scalingsRef;
         double maxInt;
 
         if (bit == 32)
