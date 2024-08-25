@@ -277,7 +277,7 @@ public class XPLNEDSF
         // Define a delegate that matches the signature
         Func<byte[], int, uint> byteConverter;
         int size;
-        uint maxInt;
+        ulong maxInt;
         List<List<List<double>>> Vref;
 
         if (bit == 32)
@@ -287,7 +287,7 @@ public class XPLNEDSF
             Vref = V32;
             byteConverter = BitConverter.ToUInt32;
             size = 4; // bytes read per coordinate in 32 bit pool
-            maxInt = 4294967295;
+            maxInt = 4294967296;
         }
         else
         {
@@ -296,7 +296,7 @@ public class XPLNEDSF
             Vref = V;
             byteConverter = (bytes, startIndex) => BitConverter.ToUInt16(bytes, startIndex);
             size = 2; // bytes read per coordinate in 16 bit pool
-            maxInt = 65535;
+            maxInt = 65536;
         }
 
         foreach (var s in atomString)
